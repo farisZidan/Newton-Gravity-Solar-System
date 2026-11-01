@@ -1,0 +1,1077 @@
+/* ==========================================================================
+   Simulasi Tata Surya & Gravitasi Newton — tampilan "Orbital Precision"
+   Nilai warna/ukuran mengikuti desain Stitch (Tailwind: space-*, slate-*, sky-*).
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+
+  --space-950: #06080e;
+  --space-900: #0a0e17;
+  --space-800: #111927;
+
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+
+  --sky-300: #7dd3fc;
+  --sky-400: #38bdf8;
+  --sky-500: #0ea5e9;
+  --amber-400: #fbbf24;
+  --emerald-400: #34d399;
+  --emerald-500: #10b981;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Space Grotesk", monospace;
+
+  --line: rgba(30, 41, 59, 0.8);     /* slate-800/80 */
+  --line-soft: rgba(30, 41, 59, 0.4); /* slate-800/40 */
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  background-color: var(--space-950);
+  color: var(--slate-200);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+h1,
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+input {
+  font: inherit;
+  color: inherit;
+}
+
+svg.ic {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+svg.ic-fill { fill: currentColor; }
+svg.ic-xs { width: 12px; height: 12px; }
+svg.ic-sm { width: 14px; height: 14px; }
+svg.ic-md { width: 16px; height: 16px; }
+
+:focus-visible {
+  outline: 1px solid var(--sky-400);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.4); }
+::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.25); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.5); }
+
+/* Titik kecil serbaguna */
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(56, 189, 248, 0.8);
+  flex-shrink: 0;
+}
+.dot-lg { width: 8px; height: 8px; background: var(--sky-400); }
+
+/* --------------------------------------------------------------------------
+   Slider (track 4px, thumb sky-400 dengan glow)
+   -------------------------------------------------------------------------- */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  height: 4px;
+  margin: 0;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  background: var(--sky-400);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+input[type="range"]::-moz-range-track { background: transparent; height: 4px; }
+input[type="range"]::-moz-range-thumb {
+  height: 12px;
+  width: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sky-400);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+.topbar {
+  height: 56px;
+  flex-shrink: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(10, 14, 23, 0.9);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand-icon { display: flex; align-items: center; justify-content: center; color: var(--sky-400); margin-right: 4px; }
+.brand-icon svg.ic { width: 20px; height: 20px; }
+.brand-text { min-width: 0; }
+.brand-row { display: flex; align-items: center; gap: 8px; }
+
+.topbar h1 {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  color: #fff;
+  white-space: nowrap;
+}
+.title-short { display: none; }
+
+.version {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: -0.025em;
+  color: var(--slate-400);
+  white-space: nowrap;
+}
+.version .dot { margin-right: 6px; }
+
+.subline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 300;
+  color: var(--slate-400);
+  white-space: nowrap;
+}
+.subline .sep { color: var(--slate-600); }
+
+/* .jpl-status { display: inline-flex; align-items: center; gap: 4px; }
+.jpl-status svg.ic { color: var(--slate-500); } */
+
+/* --- Memperbaiki Tampilan Status JPL agar Saling Ganti (Tidak Tampil Bersamaan) --- */
+.s-loading, .s-live, .s-fallback { display: none; }
+
+/* Menampilkan teks status secara eksklusif berdasarkan atribut data-jpl pada body */
+body[data-jpl="loading"] .s-loading { display: inline; }
+body[data-jpl="live"] .s-live { display: inline; }
+body[data-jpl="fallback"] .s-fallback { display: inline; }
+
+/* Ikon WiFi On/Off */
+.s-icon-on { display: none; }
+body[data-jpl="live"] .s-icon-on { display: inline-block; color: var(--sky-400); }
+body[data-jpl="live"] .s-icon-off { display: none; }
+
+body[data-jpl="fallback"] .s-icon-on { display: none; }
+body[data-jpl="fallback"] .s-icon-off { display: inline-block; color: var(--amber-400); }
+
+/* Penataan tanggal mobile agar horizontal dan tidak menabrak ke atas */
+.date-mobile {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--slate-400);
+  white-space: nowrap;
+}
+.date-mobile svg.ic { color: var(--sky-400); width: 11px; height: 11px; }
+
+/* Kontrol waktu */
+.timebar { 
+  display: flex; 
+  align-items: center; 
+  gap: 16px; 
+  padding: 0 16px;
+  flex: 1; /* Membuat timebar ikut merentang di antara judul dan tombol aksi */
+  justify-content: space-between;
+  max-width: 800px; /* Atur batas maksimal agar tidak terlalu menempel ke sisi pinggir */
+  margin: 0 auto;
+}
+
+/* Bagian kiri pengatur tanggal: rata kanan agar jika teks bertambah panjang, 
+   ia akan melebar ke arah kiri secara dinamis tanpa menggeser tombol play */
+.timebar-left {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 140px; /* Sesuaikan lebar minimum awal */
+}
+
+.date-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 10px;
+  border-right: 1px solid rgba(30, 41, 59, 0.6);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  color: var(--slate-300);
+  white-space: nowrap;
+}
+.date-chip svg.ic { color: var(--slate-400); }
+
+/* Tombol Play sebagai jangkar di tengah */
+.play-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0; /* Mencegah tombol ikut menyusut */
+  border-radius: 9999px;
+  color: var(--slate-200);
+  transition: color 0.15s, background-color 0.15s;
+}
+.play-btn:hover { color: #fff; background: rgba(30, 41, 59, 0.6); }
+.play-btn svg.ic { width: 14px; height: 14px; }
+.play-btn .icon-play { display: none; }
+.play-btn.is-paused { background: rgba(245, 158, 11, 0.2); color: var(--amber-400); }
+.play-btn.is-paused .icon-pause { display: none; }
+.play-btn.is-paused .icon-play { display: block; }
+
+/* Bagian kanan (slider & tombol reset) */
+.timebar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1; /* Mengisi sisa ruang ke kanan */
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.speed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1; /* Membuat slider dan elemennya meregang fleksibel */
+  max-width: 800px; /* Batas maksimal agar tidak terlalu panjang di layar ultrawide */
+  min-width: 50px;
+}
+
+.speed-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 16px;
+  text-transform: uppercase;
+  color: var(--slate-500);
+  white-space: nowrap;
+}
+/* Slider kecepatan responsif dengan batas lebar maksimal */
+.speed input[type="range"] {
+  width: 100%;
+  max-width: 550px; /* Lebar maksimal yang bisa kamu tentukan, menyusut otomatis di layar kecil */
+  min-width: 50px;
+  flex: 1;
+}
+.speed output {
+  min-width: 36px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--slate-300);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.reset-timeline {
+  padding: 4px;
+  color: var(--slate-400);
+  transition: color 0.15s;
+  display: flex;
+  flex-shrink: 0;
+}
+.reset-timeline:hover { color: #fff; }
+
+/* Aksi kanan */
+.actions { display: flex; align-items: center; gap: 8px; }
+.trails-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--slate-300);
+  transition: color 0.15s;
+}
+.trails-btn:hover { color: #fff; }
+.trails-btn svg.ic { color: var(--slate-400); }
+.trails-btn span { font-size: 11px; }
+
+.dock-toggle { padding: 6px; display: flex; color: var(--slate-400); transition: color 0.15s; }
+.dock-toggle:hover { color: #fff; }
+.dock-toggle .icon-mobile { display: none; }
+.dock-toggle .icon-dock-open { display: none; }
+.dock-toggle.is-closed .icon-dock-open { display: block; }
+.dock-toggle.is-closed .icon-dock-close { display: none; }
+
+/* Membuat statistik FPS dan link GitHub berbaris horizontal */
+.dock-foot-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap; /* Mencegah elemen turun ke baris baru */
+  white-space: nowrap;
+}
+
+.dock-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+}
+
+.foot-sep {
+  color: var(--slate-600);
+  font-size: 10px;
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--slate-400);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.github-link:hover {
+  color: var(--sky-400);
+}
+
+.github-link svg.ic {
+  width: 13px;
+  height: 13px;
+  color: currentColor;
+}
+
+/* ==========================================================================
+   Area kerja: kanvas + dock
+   ========================================================================== */
+.workspace {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  overflow: hidden;
+}
+
+.canvas-area {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: var(--space-950);
+}
+
+canvas#simCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+canvas#simCanvas:active { cursor: grabbing; }
+
+/* HUD zoom (kiri bawah) */
+.zoom-hud {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--slate-400);
+}
+.fit-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--slate-300);
+  transition: color 0.15s;
+}
+.fit-btn:hover { color: #fff; }
+.fit-btn svg.ic { color: var(--slate-400); }
+.hud-divider { display: block; width: 1px; height: 12px; margin: 0 2px; background: var(--slate-800); }
+.zoom-step {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--slate-400);
+  transition: color 0.15s;
+}
+.zoom-step:hover { color: #fff; }
+.zoom-label {
+  min-width: 28px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--slate-300);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Legenda planet (pil di tengah bawah) */
+.legend {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(90vw, calc(100% - 400px));
+  padding: 8px 16px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  background: rgba(10, 14, 23, 0.9);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--slate-300);
+  transition: background-color 0.15s;
+}
+.legend:hover { background: rgba(10, 14, 23, 0.95); }
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.legend-item:hover { color: #fff; }
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--c);
+  box-shadow: 0 0 6px var(--c);
+}
+.legend-item[data-planet="Matahari"] { color: var(--slate-200); font-weight: 500; }
+.legend-item[data-planet="Jupiter"] .legend-dot { width: 10px; height: 10px; }
+.legend-item[data-planet="Bulan"] { color: var(--slate-400); font-size: 10px; }
+.legend-item[data-planet="Bulan"] .legend-dot { width: 6px; height: 6px; box-shadow: none; }
+.legend-item.is-tracking { color: var(--sky-300); font-weight: 500; }
+
+/* Penanda fokus kamera */
+.target-pill {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+}
+.target-text { color: var(--slate-400); }
+.target-text strong { color: var(--slate-200); font-weight: 500; }
+.target-pill button { margin-left: 4px; display: flex; color: var(--slate-500); transition: color 0.15s; }
+.target-pill button:hover { color: var(--slate-300); }
+.target-pill .dot { background: var(--sky-400); }
+
+/* ==========================================================================
+   Dock inspektur
+   ========================================================================== */
+.dock {
+  position: relative;
+  z-index: 30;
+  flex-shrink: 0;
+  width: 384px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+  background: rgba(10, 14, 23, 0.95);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transition: width 0.3s ease, transform 0.3s ease, visibility 0s linear 0s;
+}
+.dock.is-closed {
+  width: 0;
+  overflow: hidden;
+  border-left-width: 0;
+  transform: translateX(100%);
+  visibility: hidden;
+  transition: width 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s;
+}
+
+.sheet-head { display: none; }
+
+.tabs {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid var(--slate-800);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+}
+.dock-tab {
+  flex: 1;
+  padding: 8px 0;
+  text-align: center;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  color: var(--slate-400);
+  transition: color 0.15s, border-color 0.15s;
+}
+.dock-tab:hover { color: var(--slate-200); }
+.dock-tab.is-active { border-bottom-color: var(--sky-400); color: var(--sky-400); font-weight: 500; }
+
+.mass-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.search { position: relative; flex: 1; display: block; }
+.search svg.ic { position: absolute; left: 0; top: 8px; color: var(--slate-500); pointer-events: none; }
+.search input {
+  width: 100%;
+  padding: 6px 8px 6px 24px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--slate-200);
+}
+.search input::placeholder { color: var(--slate-500); }
+.search input:focus { outline: none; border-bottom-color: var(--sky-400); }
+.reset-all {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--slate-400);
+  transition: color 0.15s;
+}
+.reset-all:hover { color: var(--slate-200); }
+
+.dock-body { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; }
+.tab-panel > * + * { margin-top: 12px; }
+#tab-mass > * + * { margin-top: 8px; }
+
+/* --- Tab 1: kontrol massa --- */
+.section-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--slate-500);
+}
+.section-label-aside { font-size: 10px; color: var(--slate-400); }
+
+.planet-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(6, 8, 14, 0.7);
+  transition: border-color 0.15s;
+}
+.planet-row + .planet-row { border-top-color: var(--line); }
+.planet-row:hover { border-color: rgba(51, 65, 85, 0.8); }
+.planet-row-head { display: flex; align-items: center; justify-content: space-between; }
+.planet-id { display: flex; align-items: center; gap: 8px; }
+.planet-swatch {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: var(--c);
+  box-shadow: 0 0 6px var(--c);
+}
+.planet-name { font-size: 12px; line-height: 16px; font-weight: 600; color: var(--slate-200); }
+.planet-tag {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--slate-800);
+  font-size: 9px;
+  line-height: 16px;
+  color: var(--slate-400);
+}
+.planet-actions { display: flex; align-items: center; gap: 6px; }
+
+.track-btn {
+  padding: 2px 8px;
+  border: 1px solid var(--slate-700);
+  border-radius: 4px;
+  background: var(--space-800);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 16px;
+  color: var(--slate-400);
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+.track-btn:hover,
+.track-btn.is-tracking { background: rgba(14, 165, 233, 0.2); color: var(--sky-300); }
+.track-btn.is-tracking { border-color: rgba(56, 189, 248, 0.5); }
+
+.reset-single-btn {
+  display: flex;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--slate-500);
+  transition: background-color 0.15s, color 0.15s;
+}
+.reset-single-btn:hover { background: var(--slate-800); color: var(--slate-300); }
+
+.mass-slider-row { display: flex; align-items: center; gap: 10px; }
+.mass-slider-row input[type="range"] { flex: 1; min-width: 0; }
+.mass-readout {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 42px;
+  padding: 2px 6px;
+  border: 1px solid var(--slate-800);
+  border-radius: 4px;
+  background: var(--space-900);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--sky-400);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Tab 2: fisika & gravitasi --- */
+.law-card {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(6, 8, 14, 0.6);
+}
+.law-card > * + * { margin-top: 6px; }
+.law-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: var(--font-mono); font-size: 11px; line-height: 16px; }
+.law-name { display: flex; align-items: center; gap: 6px; color: var(--slate-400); white-space: nowrap; }
+.law-name .dot { background: var(--sky-400); width: 6px; height: 6px; }
+.law-formula { font-weight: 600; color: var(--sky-300); white-space: nowrap; }
+.law-const { font-family: var(--font-mono); font-size: 10px; line-height: 16px; color: var(--slate-400); }
+
+.param-block { padding: 4px 0; }
+.param-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding-bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+}
+.param-title { font-weight: 500; color: var(--slate-300); }
+.live-badge {
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(30, 41, 59, 0.6);
+  font-size: 10px;
+  color: var(--slate-400);
+  white-space: nowrap;
+}
+.live-dot { display: inline-block; width: 4px; height: 4px; border-radius: 9999px; background: var(--emerald-400); flex-shrink: 0; }
+body[data-jpl="fallback"] .live-badge .live-dot,
+body[data-jpl="loading"] .live-badge .live-dot { background: var(--amber-400); }
+
+.table-scroll { overflow-x: auto; }
+.phys-table { width: 100%; border-collapse: collapse; text-align: left; font-family: var(--font-sans); }
+.phys-table thead tr {
+  border-bottom: 1px solid rgba(30, 41, 59, 0.6);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 16px;
+  color: var(--slate-500);
+}
+.phys-table th { padding: 8px 0; font-weight: 400; }
+.phys-table th.num,
+.phys-table td.num { text-align: right; }
+.phys-table th.num { padding-left: 8px; }
+.phys-table tbody tr { border-top: 1px solid var(--line-soft); transition: background-color 0.15s; }
+.phys-table tbody tr:first-child { border-top: 0; }
+.phys-table tbody tr:hover { background: rgba(30, 41, 59, 0.4); }
+.phys-table td {
+  padding: 6px 0 6px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 16px;
+  color: var(--slate-300);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.phys-table td:first-child { padding-left: 0; }
+.phys-table .body-cell { display: flex; align-items: center; gap: 6px; }
+.phys-table .body-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--c); flex-shrink: 0; }
+.phys-table .body-name { font-family: var(--font-sans); font-size: 11px; font-weight: 500; color: var(--slate-200); }
+.phys-table .mass-val { color: var(--slate-400); }
+.phys-table .gravity-val { color: var(--sky-400); font-weight: 500; }
+.phys-table .speed-val { color: var(--amber-400); font-weight: 500; }
+
+.interp { padding-top: 10px; border-top: 1px solid var(--line-soft); font-size: 11px; color: var(--slate-400); }
+.interp > * + * { margin-top: 4px; }
+.interp-title { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--slate-300); }
+.interp-text { font-size: 12px; line-height: 16px; font-weight: 300; color: var(--slate-400); }
+
+/* --- Tab 3: energi sistem --- */
+.telemetry { font-family: var(--font-mono); padding: 4px 0; }
+.telemetry > * + * { margin-top: 16px; }
+.telemetry-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.6);
+}
+.telemetry-title { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.025em; color: var(--slate-200); }
+.telemetry-title .live-dot { width: 8px; height: 8px; }
+.stable-badge {
+  padding: 2px 6px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.1);
+  font-size: 10px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--emerald-400);
+}
+
+.energy-rows { font-size: 12px; line-height: 16px; }
+.energy-rows > * + * { margin-top: 8px; }
+.energy-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--line-soft); }
+.energy-label { font-size: 11px; color: var(--slate-400); }
+.energy-label sub { font-size: 0.75em; line-height: 0; }
+.energy-val { font-weight: 500; font-variant-numeric: tabular-nums; }
+.energy-val.ek { color: var(--sky-300); }
+.energy-val.ep { color: var(--slate-400); }
+.energy-total { padding: 6px 0; border-bottom-color: rgba(30, 41, 59, 0.6); }
+.energy-total .energy-label { color: var(--slate-200); font-weight: 500; }
+.energy-val.et { color: var(--amber-400); font-weight: 600; }
+
+.drift { padding-top: 4px; }
+.drift > * + * { margin-top: 8px; }
+.drift-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; line-height: 16px; }
+.drift-label { color: var(--slate-400); }
+.drift-val { font-weight: 500; color: var(--emerald-400); }
+.drift-bar { display: flex; width: 100%; height: 6px; overflow: hidden; border-radius: 9999px; background: var(--slate-800); }
+.drift-fill { height: 100%; border-radius: 9999px; background: var(--sky-400); transition: width 0.3s; }
+.drift-foot { display: flex; justify-content: space-between; font-size: 10px; line-height: 16px; color: var(--slate-500); }
+
+.orbital { padding-top: 12px; border-top: 1px solid rgba(30, 41, 59, 0.5); font-size: 11px; line-height: 16px; }
+.orbital > * + * { margin-top: 8px; }
+.orbital-head { display: flex; align-items: center; justify-content: space-between; font-weight: 500; color: var(--slate-300); }
+.orbital-eph { font-size: 10px; font-weight: 400; color: var(--sky-400); }
+.orbital-rows { color: var(--slate-400); }
+.orbital-rows > * + * { margin-top: 6px; }
+.orbital-rows > div { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; }
+.orbital-rows .v { color: var(--slate-300); }
+.orbital-rows .v.ok { color: var(--emerald-400); }
+
+/* --- Footer dock --- */
+.dock-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--slate-400);
+}
+.dock-stat { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); }
+.dock-foot button {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--slate-400);
+  transition: color 0.15s;
+}
+.dock-foot button:hover { color: var(--slate-200); text-decoration: underline; }
+
+/* ==========================================================================
+   Mobile (< 768px): header ringkas, HUD zoom di kiri atas, dock jadi bottom sheet
+   ========================================================================== */
+@media (max-width: 767px) {
+  .topbar { 
+    padding: 0 10px; 
+    gap: 6px; 
+    height: auto;
+    min-height: 56px;
+    flex-wrap: wrap;
+  }
+  
+  .brand { gap: 6px; margin-right: 0; max-width: 45%; }
+  .brand-icon { margin-right: 0; }
+  .topbar h1 { font-size: 11px; line-height: 14px; }
+  .title-full, .version, .subline, .date-chip, .trails-btn span { display: none; }
+  .title-short { display: inline; }
+  
+  .date-mobile {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    line-height: 14px;
+    color: var(--slate-400);
+  }
+  .date-mobile .dot { width: 4px; height: 4px; }
+
+  /* Timebar merentang rapi dan mengisi ruang di antara brand dan tombol aksi */
+  .timebar { 
+    display: flex;
+    align-items: center;
+    gap: 8px; 
+    padding: 0;
+    flex: 1;
+    max-width: none;
+    justify-content: flex-end;
+  }
+
+  .timebar-left { display: none; } /* Gunakan date-mobile di brand */
+
+  /* Tombol Play/Pause */
+  .play-btn { 
+    border: 1px solid var(--slate-700); 
+    background: var(--space-800);
+    width: 26px;
+    height: 26px;
+  }
+  .play-btn svg.ic { width: 12px; height: 12px; }
+
+  /* Kontainer kanan & slider kecepatan yang dipaksa memanjang penuh */
+  .timebar-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1; /* Membawa slider meregang mengisi sisa ruang */
+    min-width: 0;
+    justify-content: flex-end;
+  }
+
+  .speed {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border: 1px solid var(--slate-800);
+    border-radius: 4px;
+    background: rgba(17, 25, 39, 0.8);
+    flex: 1; /* Fleksibel memenuhi ruang */
+    max-width: none; /* Hilangkan batas kaku */
+    min-width: 0;
+  }
+  
+  .speed-label { display: none; }
+
+  /* Slider range otomatis melebar memenuhi ruang kontainer */
+  .speed input[type="range"] {
+    flex: 1;
+    width: 100%;
+    max-width: none;
+    min-width: 40px;
+  }
+
+  .speed output { 
+    min-width: 28px; 
+    font-size: 10px; 
+    text-align: right;
+  }
+
+  .reset-timeline {
+    padding: 2px;
+  }
+
+  .actions { gap: 6px; }
+  .dock-toggle { padding: 4px; color: var(--sky-400); }
+  .dock-toggle .icon-desktop { display: none !important; }
+  .dock-toggle .icon-mobile { display: block; }
+
+  .zoom-hud {
+    top: 12px;
+    left: 12px;
+    bottom: auto;
+    gap: 4px;
+    padding: 4px 8px;
+    border: 1px solid var(--line);
+    border-radius: 9999px;
+    background: rgba(10, 14, 23, 0.9);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+  .fit-btn { padding: 2px 6px; font-size: 10px; }
+  .hud-divider { height: 10px; }
+  .zoom-step { width: 20px; height: 20px; }
+  .zoom-label { font-size: 10px; }
+
+  .target-pill { top: 52px; left: 12px; }
+
+  .legend {
+    bottom: 12px;
+    gap: 10px;
+    max-width: 94vw;
+    padding: 6px 12px;
+    background: rgba(10, 14, 23, 0.95);
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+    font-size: 10px;
+  }
+  .legend-item { gap: 4px; }
+
+  .dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 62vh;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 16px 16px 0 0;
+    transform: translateY(0);
+  }
+  .dock.is-closed {
+    width: 100%;
+    border-left-width: 0;
+    transform: translateY(100%);
+  }
+
+  .sheet-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 8px 16px 4px;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+  }
+  .sheet-handle { width: 40px; height: 4px; margin-bottom: 8px; border-radius: 9999px; background: rgba(51, 65, 85, 0.8); }
+  .sheet-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--slate-300);
+  }
+  .sheet-title { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .sheet-title-row button { padding: 4px; border-radius: 4px; color: var(--slate-400); display: flex; }
+  .sheet-title-row button:hover { color: #fff; background: rgba(30, 41, 59, 0.6); }
+}
+
+@media (min-width: 768px) {
+  .sheet-head { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock, .dock.is-closed, .drift-fill { transition: none; }
+}
